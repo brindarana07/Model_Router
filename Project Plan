@@ -2,7 +2,7 @@
 
 A model router is a service that receives an LLM request and decides **which model should answer it**, balancing quality, cost, and latency. Simple prompts go to a cheap, fast model. Hard prompts go to a stronger one. If a provider fails, the router falls back to another.
 
----
+
 
 ## 1. Goals
 
@@ -12,17 +12,17 @@ A model router is a service that receives an LLM request and decides **which mod
 - Handle failures with retries, timeouts, and fallbacks.
 - Log every decision so routing can be measured and improved.
 
-## 2. Non-goals (for v1)
+ 2. Non-goals (for v1)
 
 - Training or hosting your own models.
 - A full billing or multi-tenant user system.
 - A web dashboard (CLI and logs are enough at first).
 
----
+
 
 ## 3. Architecture
 
-```
+
 Client app
     |
     v
