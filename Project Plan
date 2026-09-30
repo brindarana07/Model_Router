@@ -1,0 +1,244 @@
+# Model Router: Project Plan
+
+A model router is a service that receives an LLM request and decides **which model should answer it**, balancing quality, cost, and latency. Simple prompts go to a cheap, fast model. Hard prompts go to a stronger one. If a provider fails, the router falls back to another.
+
+---
+
+## 1. Goals
+
+- Expose **one OpenAI-compatible endpoint** (`/v1/chat/completions`) so existing apps can switch to the router by changing only the base URL.
+- Route each request to the best model using pluggable strategies.
+- Cut cost without a noticeable drop in answer quality.
+- Handle failures with retries, timeouts, and fallbacks.
+- Log every decision so routing can be measured and improved.
+
+## 2. Non-goals (for v1)
+
+- Training or hosting your own models.
+- A full billing or multi-tenant user system.
+- A web dashboard (CLI and logs are enough at first).
+
+---
+
+## 3. Architecture
+
+```
+Client app
+    |
+    v
+[ API layer ]  FastAPI, OpenAI-compatible
+    |
+    v
+[ Preprocessor ]  token count, language, has_code, has_image, tool use
+    |
+    v
+[ Router ]  strategy decides: model + fallbacks
+    |
+    v
+[ Provider adapters ]  OpenAI / Anthropic / Gemini / Ollama (local)
+    |
+    v
+[ Response + Logger ]  latency, tokens, cost, chosen model, reason
+```
+
+### Core components
+
+| Component | Responsibility |
+|---|---|
+| API layer | Accept requests, validate, support streaming, return unified responses |
+| Preprocessor | Extract features used for routing decisions |
+| Router | Pick a model using one or more strategies |
+| Provider adapters | One small class per provider with the same interface |
+| Config | YAML file listing models, prices, limits, and routing rules |
+| Logger / metrics | Store each decision and outcome for analysis |
+
+---
+
+## 4. Routing strategies (build in this order)
+
+1. **Static rules**: match on simple features.
+   Example: `has_code -> code model`, `tokens > 20k -> long-context model`, `needs_vision -> multimodal model`.
+2. **Complexity scoring**: a cheap heuristic or small classifier rates the prompt as easy, medium, or hard, then maps each level to a model tier.
+3. **Cascade**: try the cheap model first; if a quality check fails (low confidence, malformed output, refusal), escalate to a stronger model.
+4. **Learned router**: train a small classifier on logged data (prompt features -> best model) using evaluation results as labels.
+5. **Fallback and load balancing**: on timeout, rate limit, or error, move to the next model in the list.
+
+---
+
+## 5. Suggested tech stack
+
+- **Language:** Python 3.11+
+- **API:** FastAPI + Uvicorn
+- **HTTP client:** httpx (async)
+- **Config:** Pydantic + YAML
+- **Storage:** SQLite to start (Postgres later)
+- **Testing:** pytest + pytest-asyncio
+- **Quality:** ruff, mypy, pre-commit
+- **Packaging:** Docker + docker-compose
+- **CI:** GitHub Actions
+
+---
+
+## 6. Repository structure
+
+```
+model-router/
+├── README.md
+├── PLAN.md
+├── LICENSE
+├── pyproject.toml
+├── Dockerfile
+├── docker-compose.yml
+├── config/
+│   └── models.example.yaml
+├── src/router/
+│   ├── api/            # FastAPI app and schemas
+│   ├── core/           # preprocessor, router, strategies
+│   ├── providers/      # base.py, openai.py, anthropic.py, ollama.py
+│   ├── eval/           # benchmark and scoring scripts
+│   └── utils/          # logging, cost calculation, token counting
+├── tests/
+├── data/               # sample prompts and eval sets
+├── docs/
+└── .github/
+    ├── workflows/ci.yml
+    └── ISSUE_TEMPLATE/
+```
+
+---
+
+## 7. Milestones
+
+### Phase 0: Setup (Day 1-2)
+- [ ] Create the repo with README, LICENSE (MIT), `.gitignore`
+- [ ] Set up `pyproject.toml`, ruff, mypy, pytest
+- [ ] Add a GitHub Actions workflow that runs lint and tests
+
+### Phase 1: Skeleton (Week 1)
+- [ ] Define the provider interface (`generate(request) -> response`)
+- [ ] Implement two adapters (one hosted API, one local via Ollama)
+- [ ] Build the `/v1/chat/completions` endpoint (non-streaming)
+- [ ] Load model list, prices, and limits from YAML
+- [ ] **Done when:** a request can be sent to a chosen model through the router
+
+### Phase 2: Basic routing (Week 2)
+- [ ] Preprocessor: token count, code detection, vision detection
+- [ ] Rule-based strategy driven by config
+- [ ] Fallback chain with timeouts and retries
+- [ ] Unit tests for each rule and failure case
+- [ ] **Done when:** different prompts reach different models, and a failing provider triggers fallback
+
+### Phase 3: Observability (Week 3)
+- [ ] Log each request: model, reason, tokens, latency, cost, status
+- [ ] Add a `/metrics` or `/stats` endpoint
+- [ ] Add streaming support
+- [ ] **Done when:** total cost and per-model usage can be reported
+
+### Phase 4: Smarter routing (Week 4-5)
+- [ ] Complexity scorer (heuristic first, small classifier later)
+- [ ] Cascade strategy with a quality check
+- [ ] Strategy selection via config (`strategy: rules | complexity | cascade`)
+
+### Phase 5: Evaluation (Week 5-6)
+- [ ] Build an eval set (50-200 prompts with easy, medium, hard labels)
+- [ ] Script that runs every strategy on the eval set
+- [ ] Compare **quality vs. cost vs. latency** against two baselines: always-cheap and always-best
+- [ ] Publish results in `docs/results.md`
+- [ ] **Done when:** there is a chart or table showing the router beats "always-best" on cost at similar quality
+
+### Phase 6: Polish and release (Week 7)
+- [ ] Docker image and docker-compose example
+- [ ] Complete README: quickstart, config guide, architecture diagram
+- [ ] `CONTRIBUTING.md` and issue templates
+- [ ] Tag `v0.1.0`
+
+### Later ideas
+- Learned router trained on logged data
+- Semantic caching to skip repeat calls
+- Per-user or per-team budgets and rate limits
+- Simple web dashboard
+- Support for tool calling and structured outputs across providers
+
+---
+
+## 8. Example config
+
+```yaml
+models:
+  - name: fast-small
+    provider: openai
+    model_id: YOUR_CHEAP_MODEL
+    cost_per_1k_input: 0.0002
+    cost_per_1k_output: 0.0008
+    max_context: 128000
+    tier: easy
+
+  - name: strong-large
+    provider: anthropic
+    model_id: YOUR_STRONG_MODEL
+    cost_per_1k_input: 0.003
+    cost_per_1k_output: 0.015
+    max_context: 200000
+    tier: hard
+
+  - name: local
+    provider: ollama
+    model_id: YOUR_LOCAL_MODEL
+    cost_per_1k_input: 0
+    cost_per_1k_output: 0
+    tier: easy
+
+routing:
+  strategy: rules
+  default: fast-small
+  fallbacks: [strong-large, local]
+  rules:
+    - if: { has_code: true }
+      use: strong-large
+    - if: { input_tokens_gt: 50000 }
+      use: strong-large
+```
+
+Replace the `YOUR_*` placeholders with current model IDs and prices from each provider's documentation.
+
+---
+
+## 9. Risks and how to handle them
+
+| Risk | Mitigation |
+|---|---|
+| Router picks a weak model and quality drops | Build the eval set early; use cascade as a safety net |
+| Router adds too much latency | Keep the preprocessor and scorer lightweight; measure overhead |
+| Provider APIs change | Keep adapters small and isolated; add contract tests |
+| Leaked API keys | Use environment variables only; add `.env` to `.gitignore`; never commit keys |
+| Prices and models go out of date | Keep all prices in config, not in code |
+
+---
+
+## 10. Starter issues to create on GitHub
+
+Label the small ones `good first issue` so others can contribute:
+
+1. Set up project scaffolding, lint, and CI
+2. Define the provider base class
+3. Add OpenAI provider adapter
+4. Add Ollama provider adapter
+5. Implement `/v1/chat/completions` endpoint
+6. Load and validate `models.yaml` with Pydantic
+7. Implement token counting utility
+8. Implement rule-based strategy
+9. Add fallback and retry logic
+10. Add request logging to SQLite
+11. Write the eval dataset and runner script
+12. Write the README quickstart
+
+---
+
+## 11. Success criteria for v0.1.0
+
+- Works as a drop-in OpenAI-compatible endpoint
+- At least 3 providers supported
+- At least 2 routing strategies available
+- Automatic fallback on provider failure
+- Documented cost savings on the included eval set
+- CI passing and a clear README
