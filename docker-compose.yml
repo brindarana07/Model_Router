@@ -1,0 +1,11 @@
+services:
+  model-router:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_ROUTER_CONFIG: /app/config/models.yaml
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./config:/app/config:ro
