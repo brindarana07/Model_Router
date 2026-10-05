@@ -66,6 +66,18 @@ def test_endpoint_falls_back_and_returns_openai_shape() -> None:
     assert calls == ["strong", "cheap"]
 
 
+def test_homepage_serves_prompt_interface() -> None:
+    app = create_app(sample_config(), lambda model: FakeProvider(model.name, []))
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "Send prompt" in response.text
+    assert "/v1/chat/completions" in response.text
+
+
 def test_streaming_is_rejected_until_implemented() -> None:
     app = create_app(sample_config(), lambda model: FakeProvider(model.name, []))
 

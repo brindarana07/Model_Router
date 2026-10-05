@@ -3,11 +3,13 @@ import os
 import time
 import uuid
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from router.core.config import ModelConfig, RouterConfig
@@ -20,6 +22,7 @@ from router.providers.openai import OpenAIProvider
 
 logger = logging.getLogger("router.decisions")
 load_dotenv()
+UI_FILE = Path(__file__).parent.parent / "static" / "index.html"
 
 
 class ChatMessage(BaseModel):
@@ -68,13 +71,15 @@ def create_app(
     provider_factory: Callable[[ModelConfig], ChatProvider] = _default_provider,
 ) -> RouterApplication:
     if config is None:
-        config = RouterConfig.load(
-            os.getenv("MODEL_ROUTER_CONFIG", "config/models.example.yaml")
-        )
+        config = RouterConfig.load(os.getenv("MODEL_ROUTER_CONFIG", "config/models.example.yaml"))
 
     app = RouterApplication(title="Model Router", version="0.1.0")
     app.router_config = config
     app.providers = {model.name: provider_factory(model) for model in config.models}
+
+    @app.get("/", include_in_schema=False)
+    async def user_interface() -> FileResponse:
+        return FileResponse(UI_FILE, media_type="text/html")
 
     @app.get("/health")
     async def health() -> dict[str, str]:
