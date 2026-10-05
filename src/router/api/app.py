@@ -45,7 +45,7 @@ class RouterApplication(FastAPI):
 
 
 def _default_provider(model: ModelConfig) -> ChatProvider:
-    if model.provider == "openai":
+    if model.provider in {"openai", "gemini", "groq"}:
         return OpenAIProvider()
     if model.provider == "anthropic":
         return AnthropicProvider()

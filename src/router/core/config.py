@@ -9,7 +9,7 @@ class ModelConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str
-    provider: Literal["openai", "anthropic", "ollama"]
+    provider: Literal["openai", "anthropic", "ollama", "gemini", "groq"]
     model_id: str
     api_base: str | None = None
     api_key_env: str | None = None

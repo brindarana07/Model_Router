@@ -14,7 +14,7 @@ Copy-Item config\models.example.yaml config\models.yaml
 Copy-Item .env.example .env
 ```
 
-Add provider keys to `.env`. Ollama must be running locally for its configured fallback to work. Then launch the API:
+Add the keys for the providers you use to `.env`. Ollama must be running locally for its configured fallback to work. Then launch the API:
 
 ```powershell
 $env:MODEL_ROUTER_CONFIG = "config/models.yaml"
@@ -38,7 +38,7 @@ The request's `model` is accepted for compatibility; routing is controlled by `c
 
 ## Configuration
 
-`config/models.example.yaml` shows model IDs, provider endpoints, key environment-variable names, context limits, per-1K token prices, retry counts, and ordered routing rules. Supported provider values are `openai`, `anthropic`, and `ollama`. Rules use `if` conditions such as `has_code`, `has_image`, and `input_tokens_gt`; the first matching rule wins. The selected model is tried before the configured fallback list.
+`config/models.example.yaml` shows model IDs, provider endpoints, key environment-variable names, context limits, per-1K token prices, retry counts, and ordered routing rules. Supported provider values are `openai`, `anthropic`, `ollama`, `gemini`, and `groq`. Gemini and Groq use their OpenAI-compatible chat completions APIs; the router supplies their default API URLs and reads `GEMINI_API_KEY` or `GROQ_API_KEY` unless `api_key_env` is configured. Model IDs, context limits, and pricing should match your provider account. To route requests to either model, add its configured model name to `routing.default`, `routing.fallbacks`, or a routing rule. Rules use `if` conditions such as `has_code`, `has_image`, and `input_tokens_gt`; the first matching rule wins. The selected model is tried before the configured fallback list.
 
 The API currently supports non-streaming chat completions and `/v1/models`. Streaming, persistent metrics, tool-call translation, complexity/cascade strategies, evaluation, and learned routing are not implemented yet.
 
