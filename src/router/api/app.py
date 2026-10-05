@@ -5,6 +5,7 @@ import uuid
 from collections.abc import Callable
 from typing import Any
 
+import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -138,16 +139,27 @@ def create_app(
                     result["model"] = model_name
                     return result
                 except Exception as error:
-                    failures.append(f"{model_name}: {type(error).__name__}")
+                    upstream_status = (
+                        error.response.status_code
+                        if isinstance(error, httpx.HTTPStatusError)
+                        else None
+                    )
+                    failure = (
+                        f"{model_name}: HTTP {upstream_status}"
+                        if upstream_status is not None
+                        else f"{model_name}: {type(error).__name__}"
+                    )
+                    failures.append(failure)
                     logger.warning(
                         "request_id=%s selected=%s used=%s reason=%s attempt=%s status=error "
-                        "latency_ms=%s error=%s",
+                        "latency_ms=%s upstream_status=%s error=%s",
                         request_id,
                         decision.selected_model,
                         model_name,
                         decision.reason,
                         attempt + 1,
                         round((time.perf_counter() - started_at) * 1000, 2),
+                        upstream_status,
                         type(error).__name__,
                     )
 

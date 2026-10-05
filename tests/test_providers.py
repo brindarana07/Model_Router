@@ -88,5 +88,7 @@ async def test_openai_compatible_provider_requires_api_key(
 def test_example_config_includes_gemini_and_groq() -> None:
     config = RouterConfig.load("config/models.example.yaml")
 
-    assert config.model_by_name("gemini-flash").provider == "gemini"
-    assert config.model_by_name("groq-fast").provider == "groq"
+    gemini = config.model_by_name("gemini-flash")
+    groq = config.model_by_name("groq-fast")
+    assert (gemini.provider, gemini.model_id) == ("gemini", "gemini-3.8-flash")
+    assert (groq.provider, groq.model_id) == ("groq", "openai/gpt-oss-120b")

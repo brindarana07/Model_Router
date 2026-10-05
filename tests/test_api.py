@@ -1,5 +1,6 @@
 from typing import Any
 
+import httpx
 from fastapi.testclient import TestClient
 
 from router.api.app import create_app
@@ -92,3 +93,30 @@ def test_context_limit_skips_model_and_uses_fallback() -> None:
     assert response.status_code == 200
     assert response.json()["model"] == "cheap"
     assert calls == ["cheap"]
+
+
+def test_upstream_http_status_is_reported_without_response_body() -> None:
+    class UnauthorizedProvider:
+        async def generate(self, model: ModelConfig, request: dict[str, Any]) -> dict[str, Any]:
+            req = httpx.Request("POST", "https://provider.example/chat/completions")
+            response = httpx.Response(
+                401,
+                request=req,
+                text='{"error":"invalid API key"}',
+            )
+            raise httpx.HTTPStatusError("upstream rejected request", request=req, response=response)
+
+    app = create_app(sample_config(), lambda model: UnauthorizedProvider())
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json={"messages": [{"role": "user", "content": "hello"}]},
+        )
+
+    assert response.status_code == 502
+    assert response.json()["detail"]["failures"] == [
+        "cheap: HTTP 401",
+        "strong: HTTP 401",
+    ]
+    assert "invalid API key" not in response.text
