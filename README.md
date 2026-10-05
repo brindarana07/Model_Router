@@ -1,6 +1,6 @@
 # Model Router
 
-A config-driven LLM gateway with an OpenAI-compatible chat completions endpoint. It routes requests using lightweight prompt features and can fall back across OpenAI-compatible APIs, Anthropic, and Ollama.
+A config-driven LLM gateway with an OpenAI-compatible chat completions endpoint. It routes requests using lightweight prompt features and can fall back across OpenAI-compatible APIs and Ollama.
 
 ## Quickstart
 
@@ -20,8 +20,6 @@ Add the keys for the providers you use to `.env`. Ollama must be running locally
 $env:MODEL_ROUTER_CONFIG = "config/models.yaml"
 uvicorn router.api.app:app --app-dir src --reload
 ```
-
-Open `http://127.0.0.1:8000/` in your browser to use the prompt interface. Enter a prompt and select **Send prompt**; the response and model that handled it will appear below. API keys remain in the server-side `.env` file.
 
 Point an OpenAI SDK client at `http://localhost:8000/v1` and use one of the model names from the config:
 
