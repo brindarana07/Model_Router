@@ -36,6 +36,13 @@ class RoutingRule(BaseModel):
             elif feature == "input_tokens_gt":
                 if isinstance(expected, bool) or not isinstance(expected, int) or expected < 0:
                     raise ValueError("input_tokens_gt rule values must be non-negative integers")
+            elif feature == "query_contains_any":
+                if (
+                    not isinstance(expected, list)
+                    or not expected
+                    or any(not isinstance(term, str) or not term.strip() for term in expected)
+                ):
+                    raise ValueError("query_contains_any rule values must be non-empty strings")
             else:
                 raise ValueError(f"unsupported routing feature: {feature}")
         return self

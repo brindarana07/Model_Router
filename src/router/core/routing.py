@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 
 from router.core.config import RouterConfig
@@ -14,7 +15,16 @@ class RouteDecision:
 def _matches(conditions: dict[str, object], features: RequestFeatures) -> bool:
     values: dict[str, object] = features.model_dump()
     for key, expected in conditions.items():
-        if key.endswith("_gt"):
+        if key == "query_contains_any":
+            query = " ".join(features.query_text.casefold().split())
+            terms = (
+                [" ".join(term.casefold().split()) for term in expected if isinstance(term, str)]
+                if isinstance(expected, list)
+                else []
+            )
+            if not any(re.search(rf"(?<!\w){re.escape(term)}(?!\w)", query) for term in terms):
+                return False
+        elif key.endswith("_gt"):
             feature_name = key[:-3]
             if feature_name not in values or not isinstance(values[feature_name], (int, float)):
                 return False
@@ -34,5 +44,5 @@ def choose_route(config: RouterConfig, features: RequestFeatures) -> RouteDecisi
             reason = f"rule:{rule.use}"
             break
 
-    candidates = list(dict.fromkeys([selected, *config.routing.fallbacks]))
+    candidates = list(dict.fromkeys([selected, config.routing.default, *config.routing.fallbacks]))
     return RouteDecision(selected_model=selected, candidates=candidates, reason=reason)

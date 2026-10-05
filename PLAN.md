@@ -18,7 +18,7 @@ Client -> FastAPI API -> preprocessor -> routing strategy -> provider adapters -
 | Component | Responsibility |
 | --- | --- |
 | API | Validate OpenAI-compatible requests and return unified responses |
-| Preprocessor | Estimate input tokens and detect code and images |
+| Preprocessor | Estimate input tokens, detect code and images, and retain query text for configured keyword rules |
 | Router | Select the first matching model and its fallback chain |
 | Providers | Translate requests for OpenAI-compatible APIs, Anthropic, and Ollama |
 | Config | Validate model IDs, prices, limits, rules, retries, and endpoints from YAML |
@@ -40,7 +40,7 @@ Client -> FastAPI API -> preprocessor -> routing strategy -> provider adapters -
 
 ### Phase 2: Basic routing
 
-- [x] Token estimate, code detection, and image detection
+- [x] Token estimate, code detection, image detection, and configurable query-keyword detection
 - [x] Config-driven static rules
 - [x] Per-model retries and ordered fallback
 - [x] Unit tests for routing and fallback behavior
