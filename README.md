@@ -49,6 +49,3 @@ ruff check .
 ruff format --check .
 mypy src
 pytest
-```
-
-Run the service in Docker with `docker compose up --build`. See [PLAN.md](PLAN.md) for milestone status.
