@@ -24,7 +24,7 @@ Client -> FastAPI API -> preprocessor -> routing strategy -> provider adapters -
 | Config | Validate model IDs, prices, limits, rules, retries, and endpoints from YAML |
 | Logs | Record selection reason, attempts, latency, usage, estimated cost, and status |
 
-## Milestones
+##**Phases**
 
 ### Phase 0: Setup
 
