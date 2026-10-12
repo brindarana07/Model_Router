@@ -19,11 +19,11 @@ Add the keys for the providers you use to `.env`. Ollama must be running locally
 ```powershell
 $env:MODEL_ROUTER_CONFIG = "config/models.yaml"
 uvicorn router.api.app:app --app-dir src --reload
-```
+
 
 Point an OpenAI SDK client at `http://localhost:8000/v1` and use one of the model names from the config:
 
-```python
+`` python
 from openai import OpenAI
 
 client = OpenAI(base_url="http://localhost:8000/v1", api_key="not-required")
