@@ -24,7 +24,7 @@ Client -> FastAPI API -> preprocessor -> routing strategy -> provider adapters -
 | Config | Validate model IDs, prices, limits, rules, retries, and endpoints from YAML |
 | Logs | Record selection reason, attempts, latency, usage, estimated cost, and status |
 
-##**Phases**
+**Phases**
 
 ### Phase 0: Setup
 
@@ -74,7 +74,8 @@ Client -> FastAPI API -> preprocessor -> routing strategy -> provider adapters -
 ## Risks
 
 | Risk | Mitigation |
-| --- | --- |
+
+
 | A weak model reduces answer quality | Build evaluation data early and add cascade checks |
 | Routing increases latency | Keep feature extraction local and measure overhead |
 | Provider APIs change | Isolate adapters and add contract tests |
