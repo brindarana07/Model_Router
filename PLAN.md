@@ -13,6 +13,7 @@
 
 ## Architecture
 
+
 Client -> FastAPI API -> preprocessor -> routing strategy -> provider adapters -> response and decision logs.
 
 | Component | Responsibility |
@@ -65,6 +66,7 @@ Client -> FastAPI API -> preprocessor -> routing strategy -> provider adapters -
 - [ ] Publish results in `docs/results.md`
 
 ### Phase 6: Release
+
 
 - [x] Docker image and Compose example
 - [x] Quickstart and configuration guide
